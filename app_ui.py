@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import os
 
-API_URL = os.getenv("API_URL","http://backend:8000")
+API_URL = os.getenv("API_URL","https://shelfsense-backend-cg19.onrender.com")
 
 st.set_page_config(
     page_title="ShelfSense",
