@@ -1,11 +1,17 @@
 from http.client import HTTPException
-
 from fastapi import FastAPI,HTTPException
 import uvicorn
 import sqlite3
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
+from database import init_db  # replace 'database' with your actual file name if different
 
-app=FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+app = FastAPI(lifespan=lifespan)
+
 class ProductCreate(BaseModel):
     category: str
     brand: str

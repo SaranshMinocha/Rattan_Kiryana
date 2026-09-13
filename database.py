@@ -1,37 +1,29 @@
-# import sqlite3
-#
-# connection = sqlite3.connect("store.db")
-# mycursor = connection.cursor()
-# # mycursor.execute("""
-# # CREATE TABLE IF NOT EXISTS Products(
-# #     ProductID INTEGER PRIMARY KEY AUTOINCREMENT,
-# #     Category TEXT,
-# #     Brand TEXT,
-# #     SizeValue INTEGER,
-# #     SizeUnit TEXT,
-# #     Price INTEGER,
-# #     Stock INTEGER
-# # )
-# # """)
-# connection.execute("PRAGMA foreign_keys = ON;")
-# mycursor.execute("""
-#     CREATE TABLE IF NOT EXISTS Sales(
-#         SaleID INTEGER PRIMARY KEY AUTOINCREMENT,
-#         ProductID INTEGER,
-#         Quantity INTEGER,
-#         TotalAmount REAL,
-#         SaleTimestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-#         FOREIGN KEY (ProductID) REFERENCES Products (ProductID)
-#     );
-# """)
-# connection.close()
 import sqlite3
 
-conn = sqlite3.connect("store.db")
-try:
-    conn.execute("ALTER TABLE Products ADD COLUMN image_url TEXT DEFAULT 'https://placehold.co/150x150?text=No+Image'")
+DATABASE_PATH = "store.db"  # Change this if your database file has a different name
+
+def init_db():
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            price REAL NOT NULL,
+            stock INTEGER NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sales (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_id INTEGER,
+            quantity INTEGER NOT NULL,
+            total_price REAL NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (product_id) REFERENCES products (id)
+        )
+    """)
+
     conn.commit()
-    print("Added image_url column.")
-except Exception as e:
-    print("Column might already exist:", e)
-conn.close()
+    conn.close()
