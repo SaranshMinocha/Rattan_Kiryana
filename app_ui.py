@@ -110,7 +110,8 @@ st.markdown("""
 # Helper functions to talk to backend
 def fetch_data(endpoint):
     try:
-        r = requests.get(f"{API_URL}/{endpoint}", timeout=3)
+        clean_endpoint = endpoint.lstrip("/")
+        r = requests.get(f"{API_URL}/{clean_endpoint}", timeout=45)
         return r.json() if r.status_code == 200 else []
     except Exception:
         return []
