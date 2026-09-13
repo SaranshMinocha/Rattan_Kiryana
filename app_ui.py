@@ -106,14 +106,17 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
-# Helper functions to talk to backend
 def fetch_data(endpoint):
+    clean_endpoint = endpoint.lstrip("/")
+    url = f"{API_URL}/{clean_endpoint}"
     try:
-        clean_endpoint = endpoint.lstrip("/")
-        r = requests.get(f"{API_URL}/{clean_endpoint}", timeout=45)
+        r = requests.get(url, timeout=45)
+        st.write(f"DEBUG: Checked `{url}` -> Status: `{r.status_code}`")
+        if r.status_code != 200:
+            st.error(f"Server returned error body: {r.text}")
         return r.json() if r.status_code == 200 else []
-    except Exception:
+    except Exception as e:
+        st.error(f"DEBUG Connection Error to `{url}`: {type(e).__name__} - {e}")
         return []
 
 
