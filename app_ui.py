@@ -1,17 +1,18 @@
 import streamlit as st
 import requests
 from datetime import datetime
+import os
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv("API_URL","http://backend:8000")
 
 st.set_page_config(
-    page_title="Rattan Store POS",
+    page_title="ShelfSense",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Custom High-Contrast Retail Theme with Interactive Hovers
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
@@ -122,28 +123,31 @@ if not products:
     st.error("Backend offline. Run `uvicorn main:app --reload` in your terminal.")
     st.stop()
 
-# ==========================================
-# 1. LIVE ANALYTICS TOP BAR
-# ==========================================
-st.title("⚡ Rattan Karyana Store — Express POS")
+st.title("⚡ ShelfSense--Inventory Manager")
 
-total_revenue = sum(s.get("TotalAmount", 0) for s in sales)
-bills_count = len(sales)
+today_str = datetime.now().strftime("%Y-%m-%d")
+
+
+todays_sales = [
+    s for s in sales
+    if s.get("SaleTimestamp", "").startswith(today_str)
+]
+
+total_revenue = sum(s.get("TotalAmount", 0) for s in todays_sales)
+bills_count = len(todays_sales)
 low_stock_items = [p for p in products if p.get("Stock", 0) <= 5]
 
 m1, m2, m3 = st.columns(3)
 with m1:
-    st.metric("Today's Revenue", f"₹{total_revenue:,.2f}")
+    st.metric(f"Today's Revenue ({today_str})", f"₹{total_revenue:,.2f}")
 with m2:
-    st.metric("Total Bills Cleared", f"{bills_count} bills")
+    st.metric("Today's Bills Cleared", f"{bills_count} bills")
 with m3:
     st.metric("Low Stock Items (≤5)", f"{len(low_stock_items)} items", delta_color="inverse")
 
 st.divider()
 
-# ==========================================
-# 2. WORKSPACE TABS
-# ==========================================
+
 tab_counter, tab_restock, tab_add, tab_register = st.tabs([
     "⚡ Billing Counter",
     "📦 Restock Shelf",
@@ -151,9 +155,7 @@ tab_counter, tab_restock, tab_add, tab_register = st.tabs([
     "📜 Today's Register"
 ])
 
-# ----------------------------------------------------
-# TAB 1: BILLING COUNTER
-# ----------------------------------------------------
+
 with tab_counter:
     categories = sorted(list({p.get("Category", "General") for p in products}))
     if "active_cat" not in st.session_state:
@@ -178,7 +180,6 @@ with tab_counter:
 
     col_shelf, col_dock = st.columns([1.6, 1.0], gap="large")
 
-    # Left: Shelf Items
     with col_shelf:
         current_cat = st.session_state["active_cat"]
         shelf_items = [p for p in products if p.get("Category", "General") == current_cat]
@@ -214,7 +215,6 @@ with tab_counter:
                         st.session_state.pop("last_bill", None)
                         st.rerun()
 
-    # Right: Checkout Drawer
     with col_dock:
         if "last_bill" in st.session_state:
             b = st.session_state["last_bill"]
@@ -250,11 +250,9 @@ with tab_counter:
             brand_items = [p for p in shelf_items if p.get("Brand") == brand]
             st.markdown(f"Charging: **{brand}**")
 
-
             def variant_formatter(v):
                 sz = f"{v.get('SizeValue', '')}{v.get('SizeUnit', '')}".strip() or "Standard"
                 return f"{sz} — ₹{v['Price']} (In Stock: {v['Stock']})"
-
 
             v_lookup = {variant_formatter(v): v for v in brand_items}
             chosen_variant = st.selectbox("Pack Size / Variant", list(v_lookup.keys()))
@@ -294,9 +292,7 @@ with tab_counter:
                     except Exception as e:
                         st.error(f"Error: {e}")
 
-# ----------------------------------------------------
-# TAB 2: RESTOCK SHELF
-# ----------------------------------------------------
+
 with tab_restock:
     st.subheader("📦 Add Inward Inventory from Suppliers")
 
@@ -324,9 +320,7 @@ with tab_restock:
         except Exception as e:
             st.error(f"Error: {e}")
 
-# ----------------------------------------------------
-# TAB 3: ADD NEW PRODUCT
-# ----------------------------------------------------
+
 with tab_add:
     st.subheader("➕ Register New Product Line")
     with st.form("new_product_form", clear_on_submit=True):
@@ -359,14 +353,12 @@ with tab_add:
                 else:
                     st.error("Failed to insert product.")
 
-# ----------------------------------------------------
-# TAB 4: TODAY'S SALES REGISTER
-# ----------------------------------------------------
+
 with tab_register:
-    st.subheader("📜 Live Sales Log (Joined SQL Data)")
-    if sales:
+    st.subheader(f"📜 Today's Sales Log ({today_str})")
+    if todays_sales:
         st.dataframe(
-            sales,
+            todays_sales,
             column_order=["SaleID", "Brand", "Category", "SizeValue", "SizeUnit", "Quantity", "TotalAmount",
                           "SaleTimestamp"],
             width="stretch",
